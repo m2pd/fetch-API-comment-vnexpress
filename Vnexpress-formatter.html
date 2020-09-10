@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css"
+        integrity="sha512-1PKOgIY59xJ8Co8+NE6FZ+LOAZKjy+KY8iq0G4B3CyeY6wYHN3yt9PW0XpSriVlkMXe40PTKnXrLnZ9+fkDaog=="
+        crossorigin="anonymous" />
+    <title>Fetch Comment Vnexpress</title>
+</head>
+
+<style>
+    * {
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    a:hover {
+        text-decoration: none;
+    }
+
+    .comment_item {
+        display: flex;
+        margin-top: 20px;
+    }
+
+    .user_status {
+        flex: 0 0 4%;
+    }
+
+    .avatar_comment {
+        margin: 0 10px 0 0;
+    }
+
+    .full_content {
+        font-size: 15px;
+        /* display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden; */
+    }
+
+    .block_like_web {
+        display: flex;
+        align-items: center;
+    }
+
+    .full_content,
+    .block_like_web {
+        margin-bottom: 0;
+    }
+
+    .block_like_web .icon {
+        margin-left: 3px;
+    }
+
+    .img_avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+    }
+
+    .comment_item .txt-name .nickname {
+        color: #04416d;
+    }
+
+    .block_like_web a,
+    .time_com {
+        color: #757575;
+        margin-right: 20px;
+        font-size: 13px;
+    }
+
+    .block_like_web a:hover,
+    .count-reply:hover {
+        color: #087cce;
+    }
+
+    .count-reply {
+        color: #076db6;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 15px;
+        margin-bottom: 0;
+        cursor: pointer;
+    }
+
+    #viewMore {
+        background: #f7f7f7;
+        height: 48px;
+        line-height: 48px;
+        padding: 0 20px;
+        font: 400 15px/48px arial;
+        color: #076db6;
+        width: 100%;
+        float: left;
+        text-align: center;
+        display: block;
+        position: relative;
+        margin-top: 20px;
+        cursor: pointer;
+    }
+
+    #viewMore:hover {
+        background-color: #087cce;
+        color: #fff;
+    }
+
+    .share_group {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        display: flex;
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s linear;
+    }
+
+    .block_share {
+        position: relative;
+    }
+
+    .block_share .item_social {
+        display: inline-block;
+        margin-left: 0;
+        margin-right: 0;
+        padding: 8px;
+        font-size: 16px;
+        width: auto;
+        height: auto;
+    }
+
+    .link_share,
+    .share_group {
+        cursor: pointer;
+    }
+
+    .block_like_web .block_share .link_share {
+        color: #757575;
+    }
+
+    .block_like_web .block_share .link_share:hover {
+        color: #087cce;
+    }
+
+    .link_share.active+.share_group {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .sub_comment:before {
+        content: "";
+        background: #e5e5e5;
+        width: 2px;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0px;
+    }
+
+    .sub_comment {
+        position: relative;
+        padding-left: 15px;
+    }
+
+    .sub_comment_item {
+        margin-top: 20px;
+    }
+
+    .comment_item .reply_name {
+        color: #087cce;
+        font-style: normal;
+    }
+    
+</style>
+
+<body>
+    <div class="container">
+        <h1 class="display-4 mb-2">Fetch API Vnexpress</h1>
+
+        <form id="addPost" class="mt-3">
+            <div class="form-group">
+                <div class="form-row">
+                    <div class="col-md-6">
+                        <input type="text" id="cmtID" class="form-control" placeholder="Nhập ID" />
+                    </div>
+
+                </div>
+            </div>
+            
+            <input type="submit" value="Get Comment ID" id="btn-submit" class="btn btn-warning" />
+        </form>
+        <div id="box_comment"></div>
+        <p id="viewMore" class="d-none">View more</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch-jsonp/1.0.6/fetch-jsonp.min.js"></script>
+    <script>
+        let addPost = document.getElementById("addPost");
+        let viewMore = document.getElementById("viewMore");
+        var isShowComment = false;
+
+        addPost.addEventListener("submit", getComment);
+        viewMore.addEventListener("click", getViewMore);
+
+        //Get comment after submit
+        function getComment(e) {
+            e.preventDefault();
+            let valueCmt = document.getElementById("cmtID").value;
+
+            if (isNaN(valueCmt) || valueCmt === "") {
+                alert("Mời nhập ID: (ID phải là số)");
+            } else {
+                let BASE_URL = `https://usi-saas.vnexpress.net/index/get?offset=0&limit=5&frommobile=0&sort=like&is_0&objectid=${valueCmt}&objecttype=1&siteid=1000000&categoryid=1001005&sign=091f3bbc6c7ba88e9a63a4815dc411f6&fbclid=IwAR1LrXlh2Y-plKjkd6vQZt-dhdYCuKyHVV5RnjS91jLAcw3932LUbyLhBmk`;
+
+                fetchJsonp(BASE_URL)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        let dataItems = data.data.items;
+                        let item = "";
+
+                        let nodeWrap = document.createElement("div");
+                        nodeWrap.className = "wrap";
+
+                        dataItems.forEach((comment, index) => {
+                            let userID = comment.userid;
+                            let commentFull = comment.content;
+
+                            let USER_URL = `https://my.vnexpress.net/apifrontend/getusersprofile?myvne_users_id[]=${userID}`;
+                            fetchJsonp(USER_URL)
+                                .then((res) => res.json())
+                                .then((dataUserId) => {
+                                    let dataProfile = dataUserId.arrUsers[userID];
+                                    let avtUrl = dataProfile.user_avatar_original;
+                                    if (!avtUrl.startsWith("https")) {
+                                        avtUrl = "https:" + avtUrl;
+                                    }
+
+                                    item += `
+                                    <div class="comment_item" data-time="${comment.creation_time}">
+                                        <div class="user_status">
+                                            <a href="..."class="avatar_comment" >
+                                                <img class="img_avatar" src="${avtUrl}" alt="avt">
+                                            </a>
+                                        </div>
+                                        <div class="content-comment">
+                                            <p class="full_content">
+                                                <span class="txt-name">
+                                                    <a href="" class="nickname" title="Xem trang ý kiến của ${comment.full_name}">
+                                                        <b>
+                                                            ${comment.full_name}
+                                                        </b>
+                                                    </a>
+                                                </span>
+                                                <span class="txt-content">${comment.content}</span>
+                                            </p>
+                                            
+                                            <div  class="block_like_web">
+                                                <div class="block_like">
+                                                    <a href="#" class="link_like">
+                                                        <span class="total_like">${comment.userlike}</span>
+                                                        <i class="icon fas fa-thumbs-up"></i>
+                                                    </a>
+                                                </div>
+
+                                                <div class="block_reply">
+                                                    <a href="javascript:void(0)" class="link_reply">Trả lời</a>
+                                                </div>
+
+                                                <div class="block_share">
+                                                    <a class="link_share" onclick=showBlockShare(this)>
+                                                        Share
+                                                    </a>
+                                                    <div class="share_group">
+                                                        <a title="Chia sẻ lên facebook" class="item_social item_fb" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${
+                                        dataProfile.share_url
+                                        }', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                            <i class="fab fa-facebook-f"></i>
+                                                        </a>
+                                                        <a title="Chia sẻ lên twitter" class="item_social item_twit" onclick="window.open('https://twitter.com/share?url=${
+                                        dataProfile.share_url
+                                        }', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                            <i class="fab fa-twitter"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                
+                                                <span class="time_com">${dataProfile.public_time}</span>
+                                            </div>
+
+                                            ${
+                                        comment.replys.total > 0
+                                            ? `<a href="javascript:;" id="count-reply" class="count-reply" data-id=${comment.comment_id}>
+                                                        <i class="fas fa-reply fa-rotate-180"></i>
+                                                        <span>${comment.replys.total}</span> Reply
+                                            </a>
+                                            `
+                                            : ""
+                                        }
+                                        
+                                        </div>
+                                    </div>
+                                    
+                                `;
+                                 
+                                    document.getElementById("box_comment").appendChild(nodeWrap);
+                                    document.querySelector(".wrap").innerHTML = item;
+                                    viewMore.classList.remove("d-none");
+
+                                    document.querySelectorAll('.txt-content').forEach(item =>{
+                                        let txtContent = item.textContent;
+                                        let txtSubContent = item.textContent.substring(0, 350) + "...";
+
+                                        if(txtContent.length >= 350){
+                                            item.textContent = txtSubContent;
+
+                                            let btnViewFull = document.createElement('i')
+                                            btnViewFull.className = 'fas fa-plus-square';
+                                            item.appendChild(btnViewFull)
+
+                                            btnViewFull.addEventListener('click', event => {
+                                                item.textContent = txtContent;
+                                            })
+                                        }
+                                    })
+
+
+                                    let wrapReply = document.createElement("div");
+                                    wrapReply.className = "sub_comment";
+
+                                    //Fetch reply comment
+                                    document.querySelectorAll('.count-reply').forEach(item => {
+                                        item.addEventListener('click', event => {
+                                            //handle click
+                                            let parentNodeCurrent = item.parentNode;
+
+                                            let commentDataId = item.dataset.id;
+                                            let REPLY_URL = `https://usi-saas.vnexpress.net/index/getreplay?siteid=1002694827&objectid=${valueCmt}&objecttype=1&id=${commentDataId}&limit=20&offset=0&cookie_aid=nxueb333ioxmqozf&sort_by=like&template_type=1`;
+                                            fetchJsonp(REPLY_URL)
+                                                .then(res => res.json())
+                                                .then(dataReply => {
+                                                    let nodeReplyWrap = document.createElement("div");
+                                                    nodeReplyWrap.className = 'sub_comment';
+
+                                                    let commentReply = "";
+
+                                                    let dataReplies = dataReply.data.items;
+                                                    dataReplies.forEach(itemReply => {
+                                                        let replyUserId = itemReply.userid;
+
+                                                        let USER_REPLY_URL = `https://my.vnexpress.net/apifrontend/getusersprofile?myvne_users_id[]=${replyUserId}`;
+                                                        fetchJsonp(USER_REPLY_URL)
+                                                            .then(res => res.json())
+                                                            .then(dataUserReply => {
+                                                                let dataReplyProfile = dataUserReply.arrUsers[replyUserId];
+
+                                                                let avtReplyUrl = dataReplyProfile.user_avatar_original;
+                                                                if (!avtReplyUrl.startsWith('https')) {
+                                                                    avtReplyUrl = 'https:' + avtReplyUrl;
+                                                                }
+
+                                                                commentReply += `
+                                                                    <div class="sub_comment_item d-flex">
+                                                                        <div class="user_status">
+                                                                            <a href="..."class="avatar_comment" >
+                                                                                <img class="img_avatar" src="${avtReplyUrl}" alt="avt">
+                                                                            </a>
+                                                                        </div>
+                                                                        <div class="content-comment">
+                                                                            <p class="full_content">
+                                                                                <span class="txt-name">
+                                                                                    <a href="" class="nickname" title="Xem trang ý kiến của ${itemReply.full_name}">
+                                                                                        <b>
+                                                                                            ${itemReply.full_name}
+                                                                                        </b>
+                                                                                    </a>
+                                                                                    ${itemReply.content}
+                                                                                </span>
+                                                                            </p>
+                                                                            <div  class="block_like_web">
+                                                                                <div class="block_like">
+                                                                                    <a href="#" class="link_like">
+                                                                                        <span class="total_like">${itemReply.userlike}</span>
+                                                                                        <i class="icon fas fa-thumbs-up"></i>
+                                                                                    </a>
+                                                                                </div>
+
+                                                                                <div class="block_reply">
+                                                                                    <a href="javascript:void(0)" class="link_reply">Trả lời</a>
+                                                                                </div>
+
+                                                                                <div class="block_share">
+                                                                                    <a class="link_share" onclick=showBlockShare(this)>
+                                                                                        Share
+                                                                                    </a>
+                                                                                    <div class="share_group">
+                                                                                        <a title="Chia sẻ lên facebook" class="item_social item_fb" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${dataReplyProfile.share_url}', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                                                            <i class="fab fa-facebook-f"></i>
+                                                                                        </a>
+                                                                                        <a title="Chia sẻ lên twitter" class="item_social item_twit" onclick="window.open('https://twitter.com/share?url=${dataReplyProfile.share_url}', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                                                            <i class="fab fa-twitter"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </div>
+                                                                                
+                                                                                <span class="time_com">${dataReplyProfile.public_time}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    `;
+
+                                                                parentNodeCurrent.appendChild(nodeReplyWrap);
+                                                                parentNodeCurrent.querySelector('.sub_comment').innerHTML = commentReply;
+                                                                item.classList.add('d-none');
+
+
+                                                            })
+                                                    })
+                                                })
+                                        })
+                                    })
+                                });
+                        });
+                    });
+            }
+
+            
+        }
+
+        //Get comment after click viewmore
+        function getViewMore() {
+            let valueCmt = document.getElementById("cmtID").value;
+            let listWrap = document.querySelectorAll(".wrap");
+            let indexOffset = listWrap.length;
+
+            let listDataTime = []
+            let relItem = document.querySelectorAll('.comment_item');
+            relItem.forEach(item => {
+                let dataTime = item.getAttribute('data-time')
+                listDataTime.push(dataTime)
+
+            })
+
+            let BASE_URL = `https://usi-saas.vnexpress.net/index/get?offset=${indexOffset}&limit=15&frommobile=0&sort=like&is_0&objectid=${valueCmt}&objecttype=1&siteid=1000000&categoryid=1001005&sign=091f3bbc6c7ba88e9a63a4815dc411f6&fbclid=IwAR1LrXlh2Y-plKjkd6vQZt-dhdYCuKyHVV5RnjS91jLAcw3932LUbyLhBmk`;
+
+            fetchJsonp(BASE_URL)
+                .then((res) => res.json())
+                .then((data) => {
+                    console.log(BASE_URL);
+                    let dataItems = data.data.items;
+                    let item = "";
+
+
+                    let nodeWrap = document.createElement("div");
+                    nodeWrap.className = "wrap";
+
+                    dataItems.forEach((comment, index) => {
+                        let userID = comment.userid;
+
+                        fetchJsonp(`https://my.vnexpress.net/apifrontend/getusersprofile?myvne_users_id[]=${userID}`)
+                            .then((res) => res.json())
+                            .then((dataUserId) => {
+                                let dataProfile = dataUserId.arrUsers[userID];
+
+                                let avtUrl = dataProfile.user_avatar_original;
+                                if (!avtUrl.startsWith("https")) {
+                                    avtUrl = "https:" + avtUrl;
+                                }
+
+                                item += `
+                                    <div class="comment_item"  data-time="${comment.creation_time}">
+                                        <div class="user_status">
+                                            <a href="..."class="avatar_comment" >
+                                                <img class="img_avatar" src="${avtUrl}" alt="avt">
+                                            </a>
+                                        </div>
+                                        <div class="content-comment">
+                                            <p class="full_content">
+                                                <span class="txt-name">
+                                                    <a href="" class="nickname" title="Xem trang ý kiến của ${comment.full_name}">
+                                                        <b>
+                                                            ${comment.full_name}
+                                                        </b>
+                                                    </a>
+                                                </span>
+                                                <span class="txt-content">${comment.content}</span>
+                                            </p>
+                                            <div  class="block_like_web">
+                                                <div class="block_like">
+                                                    <a href="#" class="link_like">
+                                                        <span class="total_like">${comment.userlike}</span>
+                                                        <i class="icon fas fa-thumbs-up"></i>
+                                                    </a>
+                                                </div>
+
+                                                <div class="block_reply">
+                                                    <a href="javascript:void(0)" class="link_reply">Trả lời</a>
+                                                </div>
+
+                                                <div class="block_share">
+                                                    <a class="link_share" onclick=showBlockShare(this)>
+                                                        Share
+                                                    </a>
+                                                    <div class="share_group">
+                                                        <a title="Chia sẻ lên facebook" class="item_social item_fb" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${
+                                    dataProfile.share_url
+                                    }', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                            <i class="fab fa-facebook-f"></i>
+                                                        </a>
+                                                        <a title="Chia sẻ lên twitter" class="item_social item_twit" onclick="window.open('https://twitter.com/share?url=${
+                                    dataProfile.share_url
+                                    }', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                            <i class="fab fa-twitter"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                
+                                                <span class="time_com">${dataProfile.public_time}</span>
+                                            </div>
+
+                                            ${
+                                    comment.replys.total > 0
+                                        ? `<a href="javascript:;" id="count-reply" class="count-reply" data-id=${comment.comment_id}>
+                                                        <i class="fas fa-reply fa-rotate-180"></i>
+                                                        <span>${comment.replys.total}</span> Reply
+                                                    </a>`
+                                        : ""
+                                    }
+                                        </div>
+                                    </div>
+                                `;
+                                document.getElementById("box_comment").appendChild(nodeWrap);
+                                let indexWrap = document.querySelectorAll(".wrap").length - 1;
+                                let totalComment = document.querySelectorAll(".comment_item").length;
+                                document.querySelectorAll(".wrap")[indexWrap].innerHTML = item;
+
+                                document.querySelectorAll('.txt-content').forEach(item =>{
+                                    let txtContent = item.textContent;
+                                    let txtSubContent = item.textContent.substring(0, 350) + "...";
+
+                                    if(txtContent.length >= 350){
+                                        item.textContent = txtSubContent;
+
+                                        let btnViewFull = document.createElement('i')
+                                        btnViewFull.className = 'fas fa-plus-square';
+                                        item.appendChild(btnViewFull)
+
+                                        btnViewFull.addEventListener('click', event => {
+                                            item.textContent = txtContent;
+                                        })
+                                    }
+                                })
+
+                                if (totalComment >= data.data.totalitem) {
+                                    document.getElementById("viewMore").classList.add("d-none");
+                                }
+
+                                document.querySelectorAll('.count-reply').forEach(item => {
+                                    item.addEventListener('click', event => {
+
+                                        //handle click
+                                        let parentNodeCurrent = item.parentNode;
+                                        let commentId = item.dataset.id;
+                                        let REPLY_URL = `https://usi-saas.vnexpress.net/index/getreplay?siteid=1002694827&objectid=${valueCmt}&objecttype=1&id=${commentId}&limit=20&offset=0&cookie_aid=nxueb333ioxmqozf&sort_by=like&template_type=1`;
+                                        fetchJsonp(REPLY_URL)
+                                            .then(res => res.json())
+                                            .then(dataReply => {
+                                                let nodeReplyWrap = document.createElement("div");
+                                                nodeReplyWrap.className = 'sub_comment';
+
+                                                let commentReply = "";
+
+                                                let dataReplies = dataReply.data.items;
+                                                dataReplies.forEach(itemReply => {
+                                                    let replyUserId = itemReply.userid;
+
+                                                    let USER_REPLY_URL = `https://my.vnexpress.net/apifrontend/getusersprofile?myvne_users_id[]=${replyUserId}`;
+                                                    fetchJsonp(USER_REPLY_URL)
+                                                        .then(res => res.json())
+                                                        .then(dataUserReply => {
+                                                            let dataReplyProfile = dataUserReply.arrUsers[replyUserId];
+
+                                                            let avtReplyUrl = dataReplyProfile.user_avatar_original;
+                                                            if (!avtReplyUrl.startsWith('https')) {
+                                                                avtReplyUrl = 'https:' + avtReplyUrl;
+                                                            }
+
+                                                            commentReply += `
+                                                    <div class="sub_comment_item d-flex">
+                                                        <div class="user_status">
+                                                            <a href="..."class="avatar_comment" >
+                                                                <img class="img_avatar" src="${avtReplyUrl}" alt="avt">
+                                                            </a>
+                                                        </div>
+                                                        <div class="content-comment">
+                                                            <p class="full_content">
+                                                                <span class="txt-name">
+                                                                    <a href="" class="nickname" title="Xem trang ý kiến của ${itemReply.full_name}">
+                                                                        <b>
+                                                                            ${itemReply.full_name}
+                                                                        </b>
+                                                                    </a>
+                                                                    ${itemReply.content}
+                                                                </span>
+                                                            </p>
+                                                            <div  class="block_like_web">
+                                                                <div class="block_like">
+                                                                    <a href="#" class="link_like">
+                                                                        <span class="total_like">${itemReply.userlike}</span>
+                                                                        <i class="icon fas fa-thumbs-up"></i>
+                                                                    </a>
+                                                                </div>
+
+                                                                <div class="block_reply">
+                                                                    <a href="javascript:void(0)" class="link_reply">Trả lời</a>
+                                                                </div>
+
+                                                                <div class="block_share">
+                                                                    <a class="link_share" onclick=showBlockShare(this)>
+                                                                        Share
+                                                                    </a>
+                                                                    <div class="share_group">
+                                                                        <a title="Chia sẻ lên facebook" class="item_social item_fb" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=${dataReplyProfile.share_url}', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                                            <i class="fab fa-facebook-f"></i>
+                                                                        </a>
+                                                                        <a title="Chia sẻ lên twitter" class="item_social item_twit" onclick="window.open('https://twitter.com/share?url=${dataReplyProfile.share_url}', '_blank', 'location=yes,height=570,width=520,scrollbars=yes,status=yes');">
+                                                                            <i class="fab fa-twitter"></i>
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <span class="time_com">${dataReplyProfile.public_time}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    `;
+
+                                                            parentNodeCurrent.appendChild(nodeReplyWrap);
+                                                            parentNodeCurrent.querySelector('.sub_comment').innerHTML = commentReply;
+                                                            item.classList.add('d-none')
+                                                        })
+                                                })
+                                            })
+                                    })
+                                })
+
+
+                            });
+
+                    });
+                });
+        }
+
+        //Show block share
+        function showBlockShare(element) {
+            element.classList.toggle("active");
+        }
+        
+    </script>
+</body>
+
+</html>
